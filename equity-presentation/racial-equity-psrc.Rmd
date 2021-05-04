@@ -1,0 +1,315 @@
+---
+title: "Racial Equity in the Central Puget Sound Region"
+subtitle: "We have a long way to go"
+output: 
+  ioslides_presentation:
+    widescreen: true
+    css: styles.css
+---
+
+```{r setup, include=FALSE}
+
+# Packages for Data Cleaning/Processing
+library(tidyverse)
+library(data.table)
+
+# Packages for Spatial Data
+library(sf)
+
+# Packages for Chart Creation
+library(ggplot2)
+library(scales)
+library(plotly)
+
+# Packages for Map Creation
+library(leaflet)
+
+setwd("C:/projects/equity-data-tools/equity-presentation")
+
+yr <- 2019
+process_acs_data <- "no"
+acs <- "acs5"
+msa.pop.limit <- 1000000
+tract.population.threshold <- 25
+
+if(acs=="acs5") {acs.name <- "5 Year Estimates"} else {acs.name <- "1 Year Estimates"}
+
+# Census Tables
+population <- "B03002"
+ownership <- "S2502"
+education <- "S1501"
+income <- "S1903"
+
+pop.source <-paste0("Source: ", yr, " American Community Survey ", acs.name, ": Table ",population)
+own.source <-paste0("Source: ", yr, " American Community Survey ", acs.name, ": Table ",ownership)
+edu.source <-paste0("Source: ", yr, " American Community Survey ", acs.name, ": Table ",education)
+inc.source <-paste0("Source: ", yr, " American Community Survey ", acs.name, ": Table ",income)
+
+psrc.logo <- "images/psrc_logo.png"
+
+# Spatial Data Inputs
+#geodatabase.server <- "AWS-PROD-SQL\\Sockeye"
+#geodatabase.name <- "ElmerGeo"
+#gdb.nm <- paste0("MSSQL:server=",geodatabase.server,";database=",geodatabase.name,";trusted_connection=yes")
+spn <- 2285
+wgs84 <- 4326
+
+# Spatial Layers
+#tract.lyr <- st_read(gdb.nm, "dbo.tract2010_nowater", crs = spn)
+#city.lyr <- st_read(gdb.nm, "dbo.cities", crs = spn)
+tract.lyr <- st_read("data/tracts.shp")
+city.lyr <- st_read("data/cities.shp")
+
+# Get List of City/Town Names in the PSRC Region
+psrc.cities <- city.lyr %>% pull(city_name) %>% unique()
+
+source("lists.R")
+source("psrc_color_palette.R")
+source("functions.R")
+
+if (process_acs_data == "yes") {source("pre-process/process-acs-data.R")} else {equity.data.by.race <- fread("data/equity_data_by_race.csv")}
+
+# Set Factor and Order in data so charts and tables sort consistently
+equity.data.by.race$ACS_Race <- factor(equity.data.by.race$ACS_Race, levels=pop.order)
+
+source("population_calculations.R")
+source("educational_attainment.R")
+source("home_ownership.R")
+
+```
+
+
+
+```{r include=FALSE}
+
+# Values
+
+
+
+# Charts
+
+
+# Maps
+
+
+```
+
+## Planning for Equity at PSRC{.slide_body_text_sm}
+<div style="position:absolute; top:5%; left:5%;">
+<slideheadstyle>Planning for Equity at PSRC</slideheadstyle>
+</div>
+
+The central Puget Sound region has a long history of racism that continues to cause enormous harm. Generations of discrimination, disinvestment, and inequitable opportunities have helped lay the groundwork for a region where people of color and white residents too often have completely different experiences. As a planning agency, PSRC makes decisions that shape transportation, land use, and the built environment. The agency has a responsibility to dismantle systems of inequity and re-imagine a region where race can no longer predict life outcomes.
+
+PSRC is developing a Regional Equity Strategy to improve outcomes for marginalized communities and how the agency operates internally. The agency will lead with race, which has proven to be an effective method for not only increasing equitable outcomes for people of color but developing a framework, tools, and resources that can remove barriers for other marginalized groups. The Regional Equity Strategy will provide guidance to help members work in a coordinated manner towards the region's goal of providing an exceptional quality of life and opportunity for all. It will also provide guidance and training for staff to ensure the agency effectively uses its roles to advance racial equity.  
+
+The work plan is anticipated to be finalized in spring 2021, for the next budget and work program. Initial phases of the strategy will be finalized in 2022. This work will be ongoing and the current draft timeline is: 
+
+![](images/equity-strategy-timeline.jpg){width=50%}
+
+<IMG style="position:absolute; bottom:2.5%; left:5%; width:192px; "SRC="`r psrc.logo`">
+
+## Data for Equity at PSRC{.slide_body_text_sm}
+<div style="position:absolute; top:5%; left:5%;">
+<slideheadstyle>PSRC Data and Analysis to Promote Racial Equity</slideheadstyle>
+</div>
+
+As the federally designated metropolitan planning organization for our region and the state-designated regional transportation planning organization, PSRC is responsible for developing and regularly updating the region’s long-range transportation plan as well as distributing federal transportation funds to local projects through its transportation improvement program. In 2003, PSRC developed a baseline demographic profile as an initial step toward better integrating environmental justice into its transportation work program. That profile is updated every couple of years to present current demographic data describing the central Puget Sound region to identify population groups and communities to be considered for subsequent environmental justice analyses and activities. We consider the Demographic Profile an important work item for our Data Department but as a staff, we are fully committed to doing more to advance Racial Equity in our region through enhanced data analysis and data sharing.
+
+The set of data provided here is the beginning of a commitment to further the understanding of racial inequities across our region through the use of data. Some of the data here might come as a surprise to some and to others it might be a no-brainer but we are providing it to ensure that we are all starting from the same level of knowledge about the racial inequities of our region that we all love.
+
+After looking at this information, please feel free to share with anyone who might be interested and if you have further ideas of data to dig into to, please contact us.
+
+<IMG style="position:absolute; bottom:2.5%; left:5%; width:192px; "SRC="`r psrc.logo`">
+
+## Population {data-background=images/slide-uw-equity_0.png data-background-size=cover}
+
+<div style="position:absolute; top:50%; left:25%;">
+<transitionstyle>Population by Race</transitionstyle>
+</div>
+
+
+## Region Population{.slide_body_text_sm}
+<div style="position:absolute; top:5%; left:5%;">
+<slideheadstyle>Population by Race: Region</slideheadstyle>
+</div>
+
+The central Puget Sound region continues to grow and the share of people of color continues to increase. In `r yr`, people of color accounted for approximately `r toString(round(region.non.white*100, 0))`% of the region’s total population. 
+
+<div style="float: left; width: 50%;">
+`r region.pop.by.race.chart`
+</div> 
+
+<div style="float: right; width: 50%;">
+`r region.non.white.map`
+</div> 
+
+<IMG style="position:absolute; bottom:2.5%; left:5%; width:192px; "SRC="`r psrc.logo`">
+<div style="position:absolute; bottom:4.0%; right:10%;"><sourcestyle>`r pop.source`</sourcestyle></div>
+
+## MSA Population{.slide_body_text_sm}
+<div style="position:absolute; top:5%; left:5%;">
+<slideheadstyle>Population by Race: Metro Area Comparisons</slideheadstyle>
+</div>
+
+Although the region continues to diversify, the central Puget Sound region continues to be one of the less-diverse metropolitan regions across the country. Of the `r msa.nonwhite.count` metropolitan areas with 1 million people or more across the nation, the central Puget Sound region ranks `r psrc.msa.nonwhite.rank` in terms of the percentage of people of color.
+
+`r msa.pop.nonwhite.chart`
+
+
+<IMG style="position:absolute; bottom:2.5%; left:5%; width:192px; "SRC="`r psrc.logo`">
+<div style="position:absolute; bottom:4.0%; right:10%;"><sourcestyle>`r pop.source`</sourcestyle></div>
+
+## County Population{.slide_body_text_sm}
+<div style="position:absolute; top:5%; left:5%;">
+<slideheadstyle>Population by Race: County</slideheadstyle>
+</div>
+
+Population distributions differ across the region's four counties. Black/African American people comprised `r toString(round(king.black*100, 1))`% of King County's total population in `r yr` and non-White persons, including White persons of Hispanic/Latino origin, comprised `r toString(round(king.non.white*100, 1))`%. In contrast, Black/African American people comprised `r toString(round(kitsap.black*100, 1))`% of Kitsap County's total population and non-White persons comprised `r toString(round(kitsap.non.white*100, 1))`%.
+
+`r county.pop.by.race.chart`
+
+<IMG style="position:absolute; bottom:2.5%; left:5%; width:192px; "SRC="`r psrc.logo`">
+<div style="position:absolute; bottom:4.0%; right:10%;"><sourcestyle>`r pop.source`</sourcestyle></div>
+
+## City Population{.slide_body_text_sm}
+<div style="position:absolute; top:5%; left:5%;">
+<slideheadstyle>Population by Race: City</slideheadstyle>
+</div>
+
+The most diverse cities in the region are our region's Core Cities - places like Burien, Kent, Lakewood, Lynnwood and Renton. In `r yr`, the City of `r city.most.diverse` had the highest share of people of color. The City of Seattle, our largest city in the region, ranked `r seattle.diverse` out of `r city.count` cities and towns in the region.
+
+`r city.nonwhite.chart`
+
+<IMG style="position:absolute; bottom:2.5%; left:5%; width:192px; "SRC="`r psrc.logo`">
+<div style="position:absolute; bottom:4.0%; right:10%;"><sourcestyle>`r pop.source`</sourcestyle></div>
+
+## Educational Attainment{data-background=images/slide-demoprofile.png data-background-size=cover}
+
+<div style="position:absolute; top:50%; left:25%;">
+<transitionstyle>Educational Attainment by Race</transitionstyle>
+</div>
+
+## Region Educational Attainment{.slide_body_text_sm}
+<div style="position:absolute; top:5%; left:5%;">
+<slideheadstyle>Educational Attainment: Region</slideheadstyle>
+</div>
+
+Education is a key foundation for future career earnings. The Central Puget Sound is known as one of the most highly educated metropolitan regions in the nation. In `r yr`, approximately `r toString(round(region.edu.all*100, 0))`% of all residents had at least a Bachelor's Degree however the share of people with degrees varies across race. The share of Black/African American people with a college degree is `r toString(round((region.edu.black/region.edu.all)*100, 0))`% of the share of the total population.
+
+<div style="float: left; width: 50%;">
+<figheadstyle>Share of Population by Race with a College Degree</figheadstyle>
+`r region.edu.attainment.chart`
+</div> 
+
+<div style="float: right; width: 50%;">
+<figheadstyle>Share of Total Population with a College Degree</figheadstyle>
+`r region.edu.all.map`
+</div> 
+
+<IMG style="position:absolute; bottom:2.5%; left:5%; width:192px; "SRC="`r psrc.logo`">
+<div style="position:absolute; bottom:4.0%; right:10%;"><sourcestyle>`r edu.source`</sourcestyle></div>
+
+## MSA Educational Attainment All{.slide_body_text_sm}
+<div style="position:absolute; top:5%; left:5%;">
+<slideheadstyle>College Degree for People of Any Race</slideheadstyle>
+</div>
+
+The share of residents in the central Puget Sound region with at least a Bachelor's Degree ranks `r psrc.msa.edu.all.rank` out of `r msa.nonwhite.count` metropolitan areas with 1 million people or more across the nation.
+
+
+`r msa.edu.all.chart`
+
+
+<IMG style="position:absolute; bottom:2.5%; left:5%; width:192px; "SRC="`r psrc.logo`">
+<div style="position:absolute; bottom:4.0%; right:10%;"><sourcestyle>`r edu.source`</sourcestyle></div>
+
+## MSA Educational Attainment Black{.slide_body_text_sm}
+<div style="position:absolute; top:5%; left:5%;">
+<slideheadstyle>College Degree for Black or African American People</slideheadstyle>
+</div>
+
+Despite ranking `r psrc.msa.edu.all.rank` out of `r msa.nonwhite.count` for the share of all people with at least a Bachelor's Degree, the share of Black/African American residents in the central Puget Sound region with at least a Bachelor's Degree ranks `r psrc.msa.edu.black.rank` out of `r msa.nonwhite.count` metropolitan areas with 1 million people or more across the nation.
+
+`r msa.edu.black.chart`
+
+
+<IMG style="position:absolute; bottom:2.5%; left:5%; width:192px; "SRC="`r psrc.logo`">
+<div style="position:absolute; bottom:4.0%; right:10%;"><sourcestyle>`r edu.source`</sourcestyle></div>
+
+## County College Educational Attainment{.slide_body_text_sm}
+<div style="position:absolute; top:5%; left:5%;">
+<slideheadstyle>College Degree by County</slideheadstyle>
+</div>
+
+Educational disparities are even greater when you look by county. `r toString(round(king.edu.all*100,0))`% of all King County residents have a college degree but only `r toString(round(king.edu.black*100, 0))`% of Black/African American residents do (`r toString(round((1-(king.edu.black/king.edu.all))*100, 0))`% less than the population as a whole). These disparities make it even more challenging to afford to live in our most populous county.
+
+`r county.edu.attainment.bachelors.chart`
+
+<IMG style="position:absolute; bottom:2.5%; left:5%; width:192px; "SRC="`r psrc.logo`">
+<div style="position:absolute; bottom:4.0%; right:10%;"><sourcestyle>`r edu.source`</sourcestyle></div>
+
+## Home Ownership{data-background=images/slide-displacementrisk.png data-background-size=cover}
+
+<div style="position:absolute; top:50%; left:25%;">
+<transitionstyle>Home Ownership by Race</transitionstyle>
+</div>
+
+## Region Home Ownership{.slide_body_text_sm}
+<div style="position:absolute; top:5%; left:5%;">
+<slideheadstyle>Home Ownership: Region</slideheadstyle>
+</div>
+
+Home ownership is a fundamental part of wealth creation in the United States. In `r yr`, approximately `r toString(round(region.own.all*100, 0))`% of all residents owned their own home however the share varies significantly by race. The share of Black/African American people that own their own home is `r toString(round(region.own.black*100, 0))`%, `r toString(round((1-(region.own.black/region.own.all))*100, 0))`% of the share of the population as a whole. In contrast, `r toString(round(region.own.white*100, 0))`% of White residents own their own home, `r toString(round(((region.own.white/region.own.all))*100, 0))`% of the share of the population as a whole.
+
+<div style="float: left; width: 50%;">
+<figheadstyle>Share of Home Ownerahip by Race</figheadstyle>
+`r region.own.chart`
+</div> 
+
+<div style="float: right; width: 50%;">
+<figheadstyle>Share of Total Population that Owns their Home</figheadstyle>
+`r region.own.all.map`
+</div> 
+
+<IMG style="position:absolute; bottom:2.5%; left:5%; width:192px; "SRC="`r psrc.logo`">
+<div style="position:absolute; bottom:4.0%; right:10%;"><sourcestyle>`r own.source`</sourcestyle></div>
+
+## MSA Home Ownership All{.slide_body_text_sm}
+<div style="position:absolute; top:5%; left:5%;">
+<slideheadstyle>Home Ownership for People of Any Race</slideheadstyle>
+</div>
+
+The share of residents in the central Puget Sound region that own their home ranks `r psrc.msa.own.all.rank` out of `r msa.nonwhite.count` metropolitan areas with 1 million people or more across the nation.
+
+
+`r msa.own.all.chart`
+
+
+<IMG style="position:absolute; bottom:2.5%; left:5%; width:192px; "SRC="`r psrc.logo`">
+<div style="position:absolute; bottom:4.0%; right:10%;"><sourcestyle>`r own.source`</sourcestyle></div>
+
+## MSA Home Ownership Black{.slide_body_text_sm}
+<div style="position:absolute; top:5%; left:5%;">
+<slideheadstyle>Home Ownership for Black or African American People</slideheadstyle>
+</div>
+
+The share of Black/African American residents in the central Puget Sound region that own their own home ranks `r psrc.msa.own.black.rank` out of `r msa.nonwhite.count`.
+
+`r msa.own.black.chart`
+
+
+<IMG style="position:absolute; bottom:2.5%; left:5%; width:192px; "SRC="`r psrc.logo`">
+<div style="position:absolute; bottom:4.0%; right:10%;"><sourcestyle>`r own.source`</sourcestyle></div>
+
+## County Home Owernship{.slide_body_text_sm}
+<div style="position:absolute; top:5%; left:5%;">
+<slideheadstyle>Home Ownership by County</slideheadstyle>
+</div>
+
+Home ownership disparities vary by county. `r toString(round(king.own.all*100,0))`% of all King County residents own their own home but only `r toString(round(king.own.black*100, 0))`% of Black/African American residents do (`r toString(round((1-(king.own.black/king.own.all))*100, 0))`% less than the population as a whole). In Snohomish County, `r toString(round(snohomish.own.all*100,0))`% of all residents own their own home and `r toString(round(snohomish.own.black*100, 0))`% of Black/African American residents do (`r toString(round((1-(snohomish.own.black/snohomish.own.all))*100, 0))`% less than the population as a whole).
+
+`r county.own.chart`
+
+<IMG style="position:absolute; bottom:2.5%; left:5%; width:192px; "SRC="`r psrc.logo`">
+<div style="position:absolute; bottom:4.0%; right:10%;"><sourcestyle>`r own.source`</sourcestyle></div>
