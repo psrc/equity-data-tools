@@ -2,10 +2,13 @@
 library(tidycensus)
 library(tidyverse)
 
-Sys.getenv("CENSUS_API_KEY")
+Sys.setenv(CENSUS_KEY='c4780eb03010d73b7ae4e6894c1592375e545a21')
 
-acs <- "acs5"
-yrs <- c(seq(2015,2019,1))
+
+census_api_key('c4780eb03010d73b7ae4e6894c1592375e545a21')
+
+acs <- "acs1"
+yrs <- c(seq(2010,2019,1))
 
 psrc.county <- c("53033","53035","53053","53061")
 psrc.msa <- c("14740","42660")
