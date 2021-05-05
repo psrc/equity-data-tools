@@ -14,7 +14,7 @@ library(openxlsx)
 source("functions.R")
 source("inputs.R")
 
-Sys.setenv(CENSUS_KEY='c4780eb03010d73b7ae4e6894c1592375e545a21')
+Sys.setenv(CENSUS_KEY='PUT YOUR KEY HERE')
 results <- NULL
 setwd("~/GitHub/equity-data-tools/asian-pacific-heritage")
 
