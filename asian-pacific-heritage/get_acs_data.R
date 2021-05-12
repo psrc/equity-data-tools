@@ -14,11 +14,11 @@ library(openxlsx)
 source("functions.R")
 source("inputs.R")
 
-Sys.setenv(CENSUS_KEY='PUT YOUR KEY HERE')
+Sys.setenv(CENSUS_KEY='c4780eb03010d73b7ae4e6894c1592375e545a21')
 results <- NULL
 setwd("~/GitHub/equity-data-tools/asian-pacific-heritage")
 
-yrs<-c(2010,2019)
+yrs<-c(2019)
 
 
 for (c in names(census.tables)){
@@ -79,3 +79,6 @@ for (c in names(census.tables)){
   write.csv(tbl_shares.merged,file= paste(census.tables[[c]][[2]],'shares', '.csv'))}
   
 } # end loop for tables
+
+
+

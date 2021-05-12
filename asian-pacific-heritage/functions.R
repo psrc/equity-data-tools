@@ -59,3 +59,77 @@ return.value <-function(data=results, c.geo=c, c.year=c.yr, acs.typ, c.tbl, c.va
   
   return(r)
 }
+
+# Functions ---------------------------------------------------------------
+download.equity.data.acs <- function(c.yr=yr, c.tbl, c.acs=acs, t.type) {
+  
+  results <- NULL
+  
+  if (t.type=="subject") {c.var<-paste0(c.acs,"/subject")} else {c.var<-paste0(c.acs)}
+  
+  # Load labels for all variables in the dataset
+  variable.labels <- load_variables(c.yr, c.var, cache = TRUE) %>% rename(variable = name)
+  
+  # Download the data for all counties
+  county.tbl <- get_acs(geography = "county", state="53", year=c.yr, survey = c.acs, table = c.tbl) %>%
+    mutate(NAME = gsub(", Washington", "", NAME)) %>%
+    filter(NAME %in% psrc.county) %>%
+    mutate(ACS_Year=c.yr, ACS_Type=c.acs, ACS_Geography="County")
+  
+  # Download the data for all places
+  place.tbl <- get_acs(geography = "place", state="53", year=c.yr, survey = c.acs, table = c.tbl) %>%
+    filter(!grepl('CDP', NAME)) %>%
+    mutate(NAME = gsub(" city, Washington", "", NAME)) %>%
+    mutate(NAME = gsub(" town, Washington", "", NAME)) %>%
+    filter(NAME %in% psrc.cities) %>%
+    mutate(ACS_Year=c.yr, ACS_Type=c.acs, ACS_Geography="Place")
+  
+  # Download the data for all msa's
+  msa.tbl <- get_acs(geography = "metropolitan statistical area/micropolitan statistical area", year=c.yr, survey = c.acs, table = c.tbl) %>%
+    filter(!grepl('Micro Area', NAME))
+  
+  msa.tbl <- msa.tbl %>%
+    filter(GEOID %in% msa.list) %>%
+    mutate(ACS_Year=c.yr, ACS_Type=c.acs, ACS_Geography="MSA")
+  
+  # Download Tract data
+  tract.tbl <- get_acs(geography = "tract", state="53", year=c.yr, survey = c.acs, table = c.tbl) %>%
+    filter(str_detect(NAME, 'King County|Kitsap County|Pierce County|Snohomish County')) %>%
+    mutate(NAME = gsub(", Washington", "", NAME)) %>%
+    mutate(ACS_Year=c.yr, ACS_Type=c.acs, ACS_Geography="Tract")
+  
+  # Get a region total and add it to the county and place table
+  region <- county.tbl %>%
+    select(variable, estimate, moe) %>%
+    group_by(variable) %>%
+    summarize(sumest = sum(estimate), summoe = moe_sum(moe, estimate)) %>%
+    rename(estimate=sumest, moe=summoe) %>%
+    mutate(GEOID="53033035053061", NAME="Region",ACS_Year=c.yr, ACS_Type=c.acs, ACS_Geography="Region")
+  
+  results <- bind_rows(list(county.tbl, region, place.tbl, msa.tbl, tract.tbl))
+  results <- left_join(results,variable.labels,by=c("variable"))
+  
+  if (t.type=="subject") {
+    results <- results %>% 
+      filter(!grepl('Percent', label), grepl('RACE', label)) %>%
+      separate(variable, c("ACS_Table", "ACS_Subject","ACS_Variable"), "_")
+  }
+  
+  if (t.type=="detailed") {
+    results <- results %>%
+      separate(variable, c("ACS_Table", "ACS_Variable"), "_") %>%
+      mutate(ACS_Subject="C01") %>%
+      mutate(label = gsub("Estimate!!","",label)) %>%
+      mutate(label = gsub(":","",label)) %>%
+      separate(label, c("temp", "ACS_Hispanic_Origin","ACS_Race","ACS_Race_Category"), "!!") %>%
+      select(-temp) %>%
+      mutate(ACS_Hispanic_Origin = replace_na(ACS_Hispanic_Origin,"Total"), ACS_Race = replace_na(ACS_Race,"Total"), ACS_Race_Category = replace_na(ACS_Race_Category,"All")) %>%
+      filter(ACS_Race_Category=="All") %>%
+      select(-ACS_Race_Category,-concept) %>%
+      mutate(ACS_Category="Population")
+    
+  }  
+  
+  return(results)
+  
+}
