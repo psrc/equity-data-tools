@@ -26,6 +26,10 @@ c.tbl <- "B02001"
 asian_data_code <- '_005'
 asian.tbl<- paste(c.tbl,asian_data_code, sep='')
 
+c.tbl.pi <- "B02001"
+pi_data_code <- '_006'
+pi.tbl<- paste(c.tbl,pi_data_code, sep='')
+
 # Load labels for all variables in the dataset
 variable.labels <- load_variables(yr, acs, cache = TRUE) %>% rename(variable = name)
 
@@ -35,7 +39,8 @@ county.tbl <- get_acs(geography = "county", state="53", year=yr, survey = acs, t
   filter(NAME %in% psrc.county) %>%
   mutate(ACS_Year=yr, ACS_Type=acs, ACS_Geography="County")
 
-county.tbl <- county.tbl %>% filter(variable==asian.tbl)
+county.tbl <- county.tbl %>% filter((variable==asian.tbl) | (variable==pi.tbl))
+
 
 # Download Tract data
 tract.tbl <- get_acs(geography = "tract", state="53", year=yr, survey = acs, table = c.tbl) %>%
@@ -43,7 +48,7 @@ tract.tbl <- get_acs(geography = "tract", state="53", year=yr, survey = acs, tab
   mutate(NAME = gsub(", Washington", "", NAME)) %>%
   mutate(ACS_Year=yr, ACS_Type=acs, ACS_Geography="Tract")
 
-tract.tbl <- tract.tbl %>% filter(variable==asian.tbl)
+tract.tbl <- tract.tbl %>% filter(variable==asian.tbl | variable==pi.tbl)
 
 # Combine into one tibble for possible upload to elmer and add variable labels
 census.data <- bind_rows(list(county.tbl, tract.tbl))
@@ -51,35 +56,37 @@ census.data <- bind_rows(list(county.tbl, tract.tbl))
 census.data <- left_join(census.data,variable.labels,by=c("variable")) %>%
   mutate(race = str_extract(label, "(?<=!!)[^!!]*$"), race = gsub(":", "", race))
 
-# Remove extra stuff from memory
-rm(county.tbl, tract.tbl)
+
 
 # Create Map --------------------------------------------------------------
 geo <- "Tract"
-r <- "Asian alone"
-
+r1 <- "Asian alone"
+r2<-'Native Hawaiian and Other Pacific Islander alone'
+  
 tbl <- census.data %>%
   filter(ACS_Geography == geo) %>%
   select(GEOID,race,estimate) %>%
   mutate(across(everything(), .fns = ~replace_na(.,0))) %>%
-  mutate(across(c('GEOID'), as.character))
+  mutate(across(c('GEOID'), as.character))%>%
+  group_by(GEOID) %>%
+  summarise(TotalPopulation=sum(estimate))
 
 c.layer <- left_join(tract.lyr,tbl, by = c("geoid10"="GEOID")) %>%
   st_transform(wgs84)
 
-rng <- range(c.layer$estimate)
+rng <- range(c.layer$TotalPopulation)
 max_bin <- max(abs(rng))
 round_to <- 10^floor(log10(max_bin))
 max_bin <- ceiling(max_bin/round_to)*round_to
 breaks <- (sqrt(max_bin)*c(0.1, 0.2,0.4, 0.6, 0.8, 1))^2
 bins <- c(0, breaks)
 
-pal <- colorBin("YlGnBu", domain = c.layer$estimate, bins = bins)
+pal <- colorBin("YlOrRd", domain = c.layer$TotalPopulation, bins = bins)
 
-labels <- paste0(prettyNum(round(c.layer$estimate, -1), big.mark = ","), " people") %>% lapply(htmltools::HTML)
+labels <- paste0(prettyNum(round(c.layer$TotalPopulation, -1), big.mark = ","), " Asian and Pacific Islander people") %>% lapply(htmltools::HTML)
 
 m <- leaflet() %>% 
-  addProviderTiles(providers$CartoDB.Positron) %>%
+  addProviderTiles(providers$CartoDB.Voyager) %>%
   
   addEasyButton(easyButton(
     icon="fa-globe", title="Region",
@@ -87,7 +94,7 @@ m <- leaflet() %>%
   
   addPolygons(data=c.layer,
               fillOpacity = 0.7,
-              fillColor = pal(c.layer$estimate),
+              fillColor = pal(c.layer$TotalPopulation),
               opacity = 0.7,
               weight = 0.7,
               color = "#BCBEC0",
@@ -107,7 +114,7 @@ m <- leaflet() %>%
   addLegend(pal = pal,
             values = c.layer$estimate,
             position = "bottomright",
-            title = "Asian Alone Population, ACS 2019") %>%
+            title = "Asian and Pacific Islander Population") %>%
 
   setView(lng=-122.257, lat=47.615, zoom=8.5)
 
