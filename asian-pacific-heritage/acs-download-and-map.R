@@ -4,7 +4,7 @@ library(leaflet)
 library(tidycensus)
 
 # Load API key 
-#census_api_key('c4780eb03010d73b7ae4e6894c1592375e545a21', install=TRUE)
+#census_api_key('putkeyhere', install=TRUE)
 Sys.getenv("CENSUS_API_KEY")
 psrc.county <- c("King County","Kitsap County","Pierce County","Snohomish County")
 
@@ -83,11 +83,16 @@ bins <- c(0, breaks)
 
 pal <- colorBin("YlOrRd", domain = c.layer$TotalPopulation, bins = bins)
 
-labels <- paste0(prettyNum(round(c.layer$TotalPopulation, -1), big.mark = ","), " Asian and Pacific Islander people") %>% lapply(htmltools::HTML)
+labels <- paste0("Census Tract ", c.layer$geoidstr, '<p></p>', 
+                 'Asian and Pacific Islander population: ', prettyNum(round(c.layer$TotalPopulation, -1), big.mark = ",")) %>% lapply(htmltools::HTML)
 
-m <- leaflet() %>% 
-  addProviderTiles(providers$CartoDB.Voyager) %>%
-  
+m <- leaflet() %>%
+  addMapPane(name = "polygons", zIndex = 410) %>% 
+  addMapPane(name = "maplabels", zIndex = 500) %>% # higher zIndex rendered on top
+  addProviderTiles("CartoDB.VoyagerNoLabels") %>%
+  addProviderTiles("CartoDB.VoyagerOnlyLabels", 
+                   options = leafletOptions(pane = "maplabels"),
+                   group = "map labels") %>%
   addEasyButton(easyButton(
     icon="fa-globe", title="Region",
     onClick=JS("function(btn, map){map.setView([47.615,-122.257],8.5); }"))) %>%
@@ -98,6 +103,8 @@ m <- leaflet() %>%
               opacity = 0.7,
               weight = 0.7,
               color = "#BCBEC0",
+              group="population",
+              options = leafletOptions(pane = "polygons"),
               dashArray = "",
               highlight = highlightOptions(
                 weight =5,
@@ -115,6 +122,9 @@ m <- leaflet() %>%
             values = c.layer$estimate,
             position = "bottomright",
             title = "Asian and Pacific Islander Population") %>%
+  addLayersControl(baseGroups = "CartoDB.VoyagerNoLabels",
+                   overlayGroups = c("map labels",
+                                     "population"))%>%
 
   setView(lng=-122.257, lat=47.615, zoom=8.5)
 
